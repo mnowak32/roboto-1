@@ -44,15 +44,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
 //      Serial.printf("[%u] Disconnected!\n", num);
       break;
     case WStype_CONNECTED: {
-//        IPAddress ip = webSocket.remoteIP(num);
-//        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+        IPAddress ip = webSocket.remoteIP(num);
+        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
       
         // send message to client
         webSocket.sendTXT(num, "GO ON");
       }
       break;
     case WStype_TEXT: {
-//      Serial.printf("[%u] get Text: %s\n", num, payload);
+        Serial.printf("[%u] got Text: %s\n", num, payload);
         String cmd((char *)payload);
         char mot = cmd.charAt(0);
         int spd = cmd.substring(1).toInt();
@@ -71,18 +71,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
         }
       }
       break;
-      case WStype_BIN:
-        Serial.printf("[%u] get binary lenght: %u\n", num, lenght);
-        hexdump(payload, lenght);
+//      case WStype_BIN:
+//        Serial.printf("[%u] get binary lenght: %u\n", num, lenght);
+//        hexdump(payload, lenght);
 
         // send message to client
         // webSocket.sendBIN(num, payload, lenght);
-        break;
+//        break;
   }
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println();
 
   Serial.print("Setting soft-AP ... ");

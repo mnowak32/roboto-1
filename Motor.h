@@ -21,7 +21,7 @@ class Motor {
     uint8_t pin0, pin1, pin2, pin3;
     char dir = 'S';
     uint16_t spd = 0;
-    unsigned long lastMillis = 0;
+    unsigned long lastMicros = 0;
     unsigned long currDelay = 0;
     unsigned long calculateDelay(uint16_t s);
     static uint8_t steps[8];

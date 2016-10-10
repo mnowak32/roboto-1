@@ -29,17 +29,17 @@ void Motor::setDirSpeed(char d, uint16_t s) {
 }
 
 void Motor::loop() {
-  unsigned long now = millis();
-  unsigned long delta = now - this->lastMillis;
-  if (now < lastMillis) { //millis counter overflowed in the meantime
-    delta = now - ((long)(this->lastMillis - 4294967295)); //so we overflow lastMillis too...
+  unsigned long now = micros();
+  unsigned long delta = now - this->lastMicros;
+  if (now < lastMicros) { //millis counter overflowed in the meantime
+    delta = now - ((long)(this->lastMicros - 4294967295)); //so we overflow lastMillis too...
   }
   if (delta < MIN_DELAY) { return; } //do not loop too often
   if (delta < this->currDelay) { //min delay according to the speed set
     return;
   }
 
-  this->lastMillis = now;
+  this->lastMicros = now;
   switch (this->dir) {
     case 'S':
     case 'N':
