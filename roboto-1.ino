@@ -1,10 +1,14 @@
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <FS.h>
+#include <WebSockets.h>
 #include <WebSocketsServer.h>
+#include "Motor.h"
 
 ESP8266WebServer srv(80);
 WebSocketsServer webSocket(81);
+Motor motorL(D0, D5, D6, D7), motorR(D1, D2, D3, D4);
 
 String getContentType(String filename){
   if(filename.endsWith(".htm")) return "text/html";
@@ -31,6 +35,50 @@ bool handleFileRead(String path){
     return true;
   }
   return false;
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght) {
+
+  switch(type) {
+    case WStype_DISCONNECTED:
+//      Serial.printf("[%u] Disconnected!\n", num);
+      break;
+    case WStype_CONNECTED: {
+//        IPAddress ip = webSocket.remoteIP(num);
+//        Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+      
+        // send message to client
+        webSocket.sendTXT(num, "GO ON");
+      }
+      break;
+    case WStype_TEXT: {
+//      Serial.printf("[%u] get Text: %s\n", num, payload);
+        String cmd((char *)payload);
+        char mot = cmd.charAt(0);
+        int spd = cmd.substring(1).toInt();
+        char dir = 'F'; //forward
+        if (spd < 0) {
+          dir = 'R'; //reverse
+          spd = -spd;
+        } else if (spd == 0) {
+          dir = 'S'; //stop
+        }
+  
+        switch(mot) {
+          case 'L': motorL.setDirSpeed(dir, (uint16_t) spd); break;
+          case 'R': motorR.setDirSpeed(dir, (uint16_t) spd); break;
+          default: break;
+        }
+      }
+      break;
+      case WStype_BIN:
+        Serial.printf("[%u] get binary lenght: %u\n", num, lenght);
+        hexdump(payload, lenght);
+
+        // send message to client
+        // webSocket.sendBIN(num, payload, lenght);
+        break;
+  }
 }
 
 void setup() {
@@ -69,4 +117,6 @@ void setup() {
 void loop() {
   srv.handleClient();
   webSocket.loop();
+  motorL.loop();
+  motorR.loop();
 }

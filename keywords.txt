@@ -1,0 +1,4 @@
+Motor	KEYWORD1
+setDirSpeed	KEYWORD2
+loop	KEYWORD2
+
