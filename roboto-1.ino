@@ -6,9 +6,15 @@
 #include <WebSocketsServer.h>
 #include "Motor.h"
 
+#include "WifiCredentials.h"
+
+#undef WIFI_MODE_AP
+
 ESP8266WebServer srv(80);
 WebSocketsServer webSocket(81);
-Motor motorL(D0, D5, D6, D7), motorR(D1, D2, D3, D4);
+Motor
+  motorL(D7, D6, D5, D0),
+  motorR(D1, D2, D3, D4);
 
 String getContentType(String filename){
   if(filename.endsWith(".htm")) return "text/html";
@@ -52,7 +58,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t lenght
       }
       break;
     case WStype_TEXT: {
-        Serial.printf("[%u] got Text: %s\n", num, payload);
+//        Serial.printf("[%u] got Text: %s\n", num, payload);
         String cmd((char *)payload);
         char mot = cmd.charAt(0);
         int spd = cmd.substring(1).toInt();
@@ -85,33 +91,58 @@ void setup() {
   Serial.begin(9600);
   Serial.println();
 
+#ifdef WIFI_MODE_AP
   Serial.print("Setting soft-AP ... ");
-  boolean result = WiFi.softAP("ROBOTO-1", "iknowkungfu");
+  boolean result = WiFi.softAP(WIFI_AP_SSID, WIFI_AP_PASS);
   if (result == true) {
     Serial.println("Ready");
     IPAddress myIP = WiFi.softAPIP();
     Serial.print("AP IP address: ");
     Serial.println(myIP);
-
-    srv.on("/", [](){
-      srv.sendHeader("Location", String("/index.html"), true);
-      srv.send(302, "text/plain", "");
-    });
-    srv.onNotFound([](){
-      if(!handleFileRead(srv.uri()))
-        srv.send(404, "text/plain", "FileNotFound");
-    });    
-    srv.begin();
-    Serial.println("HTTP server started");
   } else {
     Serial.println("Failed!");
+    delay(10000);
+    ESP.reset();
   }
+#else
+  Serial.print("Connecting to the WiFi.");
+  WiFi.begin(WIFI_STA_SSID, WIFI_STA_PASS);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    digitalWrite(BUILTIN_LED, 1 - digitalRead(BUILTIN_LED));
+    delay(500);
+    Serial.print(".");
+  }
+  for(char i = 0; i < 10; i++) {
+    digitalWrite(BUILTIN_LED, 1);
+    delay(200);
+    digitalWrite(BUILTIN_LED, 0);
+    delay(200);
+  }
+  Serial.print("\nConnected, IP address: ");
+  Serial.println(WiFi.localIP());
+#endif
+
+  srv.on("/", [](){
+    srv.sendHeader("Location", String("/index.html"), true);
+    srv.send(302, "text/plain", "");
+  });
+  srv.onNotFound([](){
+    if(!handleFileRead(srv.uri()))
+      srv.send(404, "text/plain", "FileNotFound");
+  });    
+  srv.begin();
+  Serial.println("HTTP server started");
+
   if (!(SPIFFS.begin())) {
     Serial.println("SPIFFS.begin failed");
   }
 
   webSocket.begin();
-  webSocket.onEvent(webSocketEvent);  
+  webSocket.onEvent(webSocketEvent);
+
+  motorL.setDirSpeed('S', 0);
+  motorR.setDirSpeed('S', 0);
 }
 
 void loop() {

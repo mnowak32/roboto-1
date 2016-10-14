@@ -5,8 +5,8 @@
 
 #define MIN_SPEED 0
 #define MAX_SPEED 100
-#define MIN_DELAY 800
-#define MAX_DELAY 16000
+#define MIN_DELAY 750
+#define MAX_DELAY 12000
 
 #include <Arduino.h>
 #include <stdint.h>
