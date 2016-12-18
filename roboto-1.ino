@@ -1,20 +1,34 @@
+#include <ShiftRegister74HC595.h>
+
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <FS.h>
 #include <WebSockets.h>
 #include <WebSocketsServer.h>
-#include "Motor.h"
 
+#include "Motor.h"
 #include "WifiCredentials.h"
 
 #undef WIFI_MODE_AP
 
 ESP8266WebServer srv(80);
 WebSocketsServer webSocket(81);
+ShiftRegister74HC595 hc595(1, 13, 14, 15); 
+
+uint8_t pinsState = 0, oldPinsState = 0;
+
+void setMotorL(uint8_t pins) {
+  pinsState = (pinsState & 0x0f) | (pins << 4);
+}
+
+void setMotorR(uint8_t pins) {
+  pinsState = (pinsState & 0xf0) | pins;
+}
+
 Motor
-  motorL(D7, D6, D5, D0),
-  motorR(D1, D2, D3, D4);
+  motorL(&setMotorL, false),
+  motorR(&setMotorR, true);
 
 String getContentType(String filename){
   if(filename.endsWith(".htm")) return "text/html";
@@ -161,6 +175,10 @@ void setup() {
   //start a websocket server on port 81
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
+
+  //set shift reg output to all 0's
+  hc595.setAllLow();
+
 }
 
 void loop() {
@@ -168,5 +186,9 @@ void loop() {
   webSocket.loop();
   motorL.loop();
   motorR.loop();
+  if (pinsState != oldPinsState) {
+    hc595.setAll(&pinsState);
+    oldPinsState = pinsState;
+  }
 }
 

@@ -1,6 +1,6 @@
 #include "Motor.h"
 
-uint8_t Motor::steps[8] = {
+const uint8_t Motor::steps[8] = {
   0b0001,
   0b0011,
   0b0010,
@@ -20,6 +20,12 @@ Motor::Motor(uint8_t p0, uint8_t p1, uint8_t p2, uint8_t p3) {
   pinMode(p1, OUTPUT);
   pinMode(p2, OUTPUT);
   pinMode(p3, OUTPUT);
+  this->stepCallback = NULL;
+}
+
+Motor::Motor(void (*func)(uint8_t), bool rev) {
+  this->stepCallback = func;
+  this->reverse = rev;
 }
 
 void Motor::setDirSpeed(char d, uint16_t s) {
@@ -67,18 +73,28 @@ unsigned long Motor::calculateDelay(uint16_t s) {
 }
 
 void Motor::setStep(uint8_t stp) {
-  uint8_t s = Motor::steps[stp & 7];
+  stp &= 7;
+  uint8_t s = Motor::steps[reverse ? 7 - stp : stp];
+  if (this->stepCallback == NULL) {
+    this->setPins(s);
+  } else {
+    this->stepCallback(s);
+  }
+}
+
+void Motor::doStop() {
+  if (this->stepCallback == NULL) {
+    this->setPins(Motor::stopState);
+  } else {
+    this->stepCallback(Motor::stopState);
+  }
+}
+
+void Motor::setPins(uint8_t s) {
   digitalWrite(this->pin0, (s & 0b0001) > 0);
   digitalWrite(this->pin1, (s & 0b0010) > 0);
   digitalWrite(this->pin2, (s & 0b0100) > 0);
   digitalWrite(this->pin3, (s & 0b1000) > 0);
-}
-
-void Motor::doStop() {
-  digitalWrite(this->pin0, 0);
-  digitalWrite(this->pin1, 0);
-  digitalWrite(this->pin2, 0);
-  digitalWrite(this->pin3, 0);
 }
 
 
